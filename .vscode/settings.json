@@ -5,7 +5,5 @@
     "tsconfig.json": true,
     ".gitignore": true,
     "README.md": true,
-    "Utilities.cs": true,
-    "website/utilities.ts": true,
   }
 }

@@ -1,25 +1,21 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-using Microsoft.EntityFrameworkCore;
-
-class Program
+﻿class Program
 {
   static void Main()
   {
     int port = 5000;
-
+    var counter = 0;
+    string[] usernames = [];
+    string[] passwords = [];
+    string[] ids = [];
     var server = new Server(port);
-
     Console.WriteLine("The server is running");
     Console.WriteLine($"Main Page: http://localhost:{port}/website/pages/index.html");
-
-    var database = new Database();
 
     while (true)
     {
       (var request, var response) = server.WaitForRequest();
 
-      Console.WriteLine($"Recieved a request with the path: {request.Path}");
+      Console.WriteLine("recieved a request: " + request.Path);
 
       if (File.Exists(request.Path))
       {
@@ -28,7 +24,7 @@ class Program
       }
       else if (request.ExpectsHtml())
       {
-        var file = new File("website/pages/404.html");
+        var file = new File("website/peges/404.html");
         response.SetStatusCode(404);
         response.Send(file);
       }
@@ -36,13 +32,64 @@ class Program
       {
         try
         {
-          /*──────────────────────────────────╮
-          │ Handle your custome requests here │
-          ╰──────────────────────────────────*/
-          response.SetStatusCode(405);
+          if (request.Path == "Message")
+          {
+            string text = request.GetBody<string>();
+            Console.WriteLine("Recieved ' " + text + " ' from the client!");
+          }
+          if (request.Path == "Button")
+          {
+            counter++;
+            Console.WriteLine(counter);
+            response.Send(counter);
+          }
+          if (request.Path == "Mess")
+          {
+            counter--;
+            Console.WriteLine(counter);
+            response.Send(counter);
+          }
+          else if (request.Path == "signup")
+          {
+            (string username, string password) = request.GetBody<(string, string)>();
+            usernames = [.. usernames, username];
+            passwords = [.. passwords, password];
+            ids = [.. ids, Guid.NewGuid().ToString()];
+            Console.WriteLine(username + ", " + password);
+          }
+          else if (request.Path == "login")
+          {
+            (string username, string password) = request.GetBody<(string, string)>();
 
-          database.SaveChanges();
+            bool FoundUser = false;
+            string UserID = "";
+
+            for (int i = 0; i < usernames.Length; i++)
+            {
+              if (username == usernames[i] && password == passwords[i])
+              {
+                FoundUser = true;
+                UserID = ids[i];
+              }
+            }
+
+            response.Send((FoundUser, UserID));
+          }
+          else if (request.Path == "GetUserName")
+          {
+            string UserID = request.GetBody<string>();
+
+            int i = 0;
+            while (ids[i] != UserID)
+            {
+              i++;
+            }
+
+            string UserName = usernames[i];
+            response.Send(UserName);
+          }
         }
+
         catch (Exception exception)
         {
           Log.WriteException(exception);
@@ -52,19 +99,4 @@ class Program
       response.Close();
     }
   }
-}
-
-
-class Database() : DbBase("database")
-{
-  /*──────────────────────────────╮
-  │ Add your database tables here │
-  ╰──────────────────────────────*/
-}
-
-class User(string id, string username, string password)
-{
-  [Key] public string Id { get; set; } = id;
-  public string Username { get; set; } = username;
-  public string Password { get; set; } = password;
 }
