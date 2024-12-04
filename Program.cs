@@ -2,6 +2,8 @@
 {
   static void Main()
   {
+    Console.WriteLine("changes!");
+
     int port = 5000;
     var counter = 0;
     string[] usernames = [];
